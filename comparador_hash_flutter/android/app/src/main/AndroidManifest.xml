@@ -1,0 +1,52 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Declara compatibilidade opcional com ambientes desktop/DeX (sem restringir celulares/tablets) -->
+    <uses-feature
+        android:name="android.hardware.type.pc"
+        android:required="false" />
+
+    <application
+        android:label="Comparador Hash"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:resizeableActivity="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Tema aplicado após a remoção da splash nativa quando o primeiro frame é desenhado -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <!-- Preserva estado e evita reinicialização ao alternar tela ou densidade no modo Samsung DeX -->
+            <meta-data
+                android:name="com.samsung.android.keepalive.density"
+                android:value="true" />
+            <meta-data
+                android:name="com.samsung.android.multidisplay.keep_process_alive"
+                android:value="true" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
+</manifest>

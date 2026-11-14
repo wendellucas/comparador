@@ -1,0 +1,32 @@
+name: comparador_hash
+description: "Comparador multiplataforma de arquivos por hash criptográfico (SHA-256, MD5, SHA-1, SHA-512)."
+publish_to: 'none'
+
+# Versão exibida no aplicativo (v0.2) e código de build para distribuição.
+version: 0.2.0+2
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  # Implementação pura em Dart de SHA-256, MD5, SHA-1 e SHA-512 em streaming.
+  crypto: ^3.0.8
+  # Drag-and-drop nativo compatível com Windows, Web, Android (incl. Samsung DeX) e iOS sem depender de Rust/cargokit.
+  desktop_drop: ^0.9.2
+  # Abstração unificada v0.4 para arquivos locais e ScopedStorage (Android content:// e Web Blob).
+  cross_file: ^0.4.0
+  cross_file_web: ^1.1.0
+  web: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparador de Arquivos por Hash</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-inner: #0f172a;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-purple: #a78bfa;
+            --success-bg: #064e3b;
+            --success-border: #10b981;
+            --success-text: #6ee7b7;
+            --danger-bg: #450a0a;
+            --danger-border: #ef4444;
+            --danger-text: #fca5a5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header p {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .algo-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .algo-box label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .algo-box select {
+            background: var(--bg-inner);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .drop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 720px) {
+            .drop-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .drop-card {
+            background: var(--bg-card);
+            border: 2px dashed #475569;
+            border-radius: 14px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 330px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .drop-card:hover {
+            border-color: #64748b;
+        }
+
+        .drop-card.dragover-1 {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .drop-card.dragover-2 {
+            background: rgba(167, 139, 250, 0.1);
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+
+        .drop-card.match {
+            border-style: solid;
+            border-color: var(--success-border);
+        }
+
+        .drop-card.mismatch {
+            border-style: solid;
+            border-color: var(--danger-border);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge-slot {
+            background: var(--bg-inner);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .slot-1 { color: var(--accent-blue); }
+        .slot-2 { color: var(--accent-purple); }
+
+        .btn {
+            background: var(--bg-inner);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #334155;
+            border-color: #475569;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #3b82f6;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        .card-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+            gap: 8px;
+        }
+
+        .icon-circle {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: var(--bg-inner);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 6px;
+        }
+
+        .file-name {
+            font-size: 16.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            word-break: break-all;
+            max-width: 100%;
+        }
+
+        .file-sub {
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .file-meta {
+            background: var(--bg-inner);
+            color: var(--text-secondary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .hash-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .hash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hash-header span {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.4px;
+        }
+
+        .hash-box {
+            background: var(--bg-inner);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            word-break: break-all;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            user-select: all;
+        }
+
+        .banner {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .banner.match {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+        }
+
+        .banner.mismatch {
+            background: var(--danger-bg);
+            border-color: var(--danger-border);
+        }
+
+        .banner-icon {
+            font-size: 28px;
+        }
+
+        .banner-text h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .banner.match .banner-text h3 { color: var(--success-text); }
+        .banner.mismatch .banner-text h3 { color: var(--danger-text); }
+
+        .banner-text p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        .banner.match .banner-text p { color: #a7f3d0; }
+        .banner.mismatch .banner-text p { color: #fecaca; }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-tip {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Comparador de Arquivos por Hash</h1>
+                <p>Arraste e solte os arquivos nas áreas abaixo (ou clique nelas) para verificar se são idênticos</p>
+            </div>
+            <div class="algo-box">
+                <label for="algoSelect">Algoritmo:</label>
+                <select id="algoSelect">
+                    <option value="SHA-256" selected>SHA-256</option>
+                    <option value="MD5">MD5</option>
+                    <option value="SHA-1">SHA-1</option>
+                    <option value="SHA-512">SHA-512</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="drop-grid">
+            <!-- ARQUIVO 1 -->
+            <div class="drop-card" id="dropZone1">
+                <input type="file" id="fileInput1" multiple>
+                <div class="card-top">
+                    <span class="badge-slot slot-1">ARQUIVO 1</span>
+                    <button class="btn" id="btnBrowse1" type="button">Procurar...</button>
+                </div>
+                <div class="card-center">
+                    <div class="icon-circle" id="icon1">📥</div>
+                    <div class="file-name" id="fileName1">Arraste o 1º arquivo aqui</div>
+                    <div class="file-sub" id="fileSub1">ou clique para selecionar no computador</div>
+                    <div class="file-meta" id="fileMeta1"></div>
+                </div>
+                <div class="hash-section" onclick="event.stopPropagation()">
+                    <div class="hash-header">
+                        <span>HASH DO ARQUIVO</span>
+                        <button class="btn" id="btnCopy1" type="button" disabled>Copiar Hash</button>
+                    </div>
+                    <div class="hash-box" id="hashBox1">Nenhum arquivo selecionado</div>
+                </div>
+            </div>
+
+            <!-- ARQUIVO 2 -->
+            <div class="drop-card" id="dropZone2">
+                <input type="file" id="fileInput2" multiple>
+                <div class="card-top">
+                    <span class="badge-slot slot-2">ARQUIVO 2</span>
+                    <button class="btn" id="btnBrowse2" type="button">Procurar...</button>
+                </div>
+                <div class="card-center">
+                    <div class="icon-circle" id="icon2">📥</div>
+                    <div class="file-name" id="fileName2">Arraste o 2º arquivo aqui</div>
+                    <div class="file-sub" id="fileSub2">ou clique para selecionar no computador</div>
+                    <div class="file-meta" id="fileMeta2"></div>
+                </div>
+                <div class="hash-section" onclick="event.stopPropagation()">
+                    <div class="hash-header">
+                        <span>HASH DO ARQUIVO</span>
+                        <button class="btn" id="btnCopy2" type="button" disabled>Copiar Hash</button>
+                    </div>
+                    <div class="hash-box" id="hashBox2">Nenhum arquivo selecionado</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BANNER RESULTADO -->
+        <div class="banner" id="resultBanner">
+            <div class="banner-icon" id="resultIcon">⚖️</div>
+            <div class="banner-text">
+                <h3 id="resultTitle">Aguardando arquivos para comparação</h3>
+                <p id="resultSub">Arraste dois arquivos (individualmente ou os dois juntos de uma vez) para verificar se possuem o mesmo hash.</p>
+            </div>
+        </div>
+
+        <!-- RODAPE -->
+        <div class="footer">
+            <span class="footer-tip">Dica: Você também pode selecionar 2 arquivos juntos no Windows Explorer e soltar em qualquer área.</span>
+            <div class="footer-actions">
+                <button class="btn" id="btnClear" type="button">Limpar Tudo</button>
+                <button class="btn btn-primary" id="btnRecalc" type="button">Recomparar Agora</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            file1: null,
+            file2: null,
+            hash1: null,
+            hash2: null
+        };
+
+        // Implementacao enxuta de MD5 em JS puro (Web Crypto API suporta SHA-1/256/384/512 nativamente)
+        function md5ArrayBuffer(buffer) {
+            const bytes = new Uint8Array(buffer);
+            function leftRotate(x, c) { return (x << c) | (x >>> (32 - c)); }
+            const s = [
+                7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+                5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
+                4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+                6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
+            ];
+            const K = new Uint32Array(64);
+            for (let i = 0; i < 64; i++) {
+                K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000) >>> 0;
+            }
+            const origBitLen = bytes.length * 8;
+            const withOne = bytes.length + 1;
+            const padLen = (56 - (withOne % 64) + 64) % 64;
+            const totalLen = withOne + padLen + 8;
+            const msg = new Uint8Array(totalLen);
+            msg.set(bytes);
+            msg[bytes.length] = 0x80;
+            const view = new DataView(msg.buffer);
+            view.setUint32(totalLen - 8, origBitLen >>> 0, true);
+            view.setUint32(totalLen - 4, Math.floor(origBitLen / 0x100000000) >>> 0, true);
+
+            let a0 = 0x67452301 >>> 0;
+            let b0 = 0xefcdab89 >>> 0;
+            let c0 = 0x98badcfe >>> 0;
+            let d0 = 0x10325476 >>> 0;
+
+            for (let offset = 0; offset < totalLen; offset += 64) {
+                let A = a0, B = b0, C = c0, D = d0;
+                for (let i = 0; i < 64; i++) {
+                    let F, g;
+                    if (i < 16) { F = (B & C) | ((~B) & D); g = i; }
+                    else if (i < 32) { F = (D & B) | ((~D) & C); g = (5 * i + 1) % 16; }
+                    else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+                    else { F = C ^ (B | (~D)); g = (7 * i) % 16; }
+                    const word = view.getUint32(offset + g * 4, true);
+                    F = (F + A + K[i] + word) >>> 0;
+                    A = D;
+                    D = C;
+                    C = B;
+                    B = (B + leftRotate(F, s[i])) >>> 0;
+                }
+                a0 = (a0 + A) >>> 0;
+                b0 = (b0 + B) >>> 0;
+                c0 = (c0 + C) >>> 0;
+                d0 = (d0 + D) >>> 0;
+            }
+            const out = new ArrayBuffer(16);
+            const outView = new DataView(out);
+            outView.setUint32(0, a0, true);
+            outView.setUint32(4, b0, true);
+            outView.setUint32(8, c0, true);
+            outView.setUint32(12, d0, true);
+            return Array.from(new Uint8Array(out)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function computeHash(file, algorithm) {
+            const buffer = await file.arrayBuffer();
+            if (algorithm === 'MD5') {
+                return md5ArrayBuffer(buffer);
+            }
+            const hashBuffer = await crypto.subtle.digest(algorithm, buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1048576) return `${(bytes / 1024).toFixed(2)} KB (${bytes.toLocaleString('pt-BR')} B)`;
+            if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(2)} MB (${bytes.toLocaleString('pt-BR')} B)`;
+            return `${(bytes / 1073741824).toFixed(2)} GB (${bytes.toLocaleString('pt-BR')} B)`;
+        }
+
+        function updateBanner() {
+            const banner = document.getElementById('resultBanner');
+            const icon = document.getElementById('resultIcon');
+            const title = document.getElementById('resultTitle');
+            const sub = document.getElementById('resultSub');
+            const dz1 = document.getElementById('dropZone1');
+            const dz2 = document.getElementById('dropZone2');
+            const hb1 = document.getElementById('hashBox1');
+            const hb2 = document.getElementById('hashBox2');
+            const algo = document.getElementById('algoSelect').value;
+
+            banner.className = 'banner';
+            dz1.classList.remove('match', 'mismatch');
+            dz2.classList.remove('match', 'mismatch');
+
+            if (!state.file1 && !state.file2) {
+                icon.textContent = '⚖️';
+                title.textContent = 'Aguardando arquivos para comparação';
+                sub.textContent = 'Arraste dois arquivos (individualmente ou os dois juntos de uma vez) para verificar se possuem o mesmo hash.';
+                return;
+            }
+
+            if (!state.file1 || !state.file2) {
+                icon.textContent = '⏳';
+                const faltando = !state.file1 ? '1º arquivo' : '2º arquivo';
+                title.textContent = `Aguardando o ${faltando}...`;
+                sub.textContent = 'Arraste o outro arquivo para a área ao lado para concluir a comparação.';
+                return;
+            }
+
+            if (!state.hash1 || !state.hash2) return;
+
+            if (state.hash1 === state.hash2) {
+                banner.classList.add('match');
+                dz1.classList.add('match');
+                dz2.classList.add('match');
+                hb1.style.color = '#34d399';
+                hb2.style.color = '#34d399';
+                icon.textContent = '✅';
+                title.textContent = `OS ARQUIVOS SÃO IDÊNTICOS! (Hashes ${algo} iguais)`;
+                sub.textContent = `O conteúdo binário dos dois arquivos é 100% igual (${state.hash1}).`;
+            } else {
+                banner.classList.add('mismatch');
+                dz1.classList.add('mismatch');
+                dz2.classList.add('mismatch');
+                hb1.style.color = '#f87171';
+                hb2.style.color = '#f87171';
+                icon.textContent = '❌';
+                title.textContent = `OS ARQUIVOS SÃO DIFERENTES! (Hashes ${algo} distintos)`;
+                if (state.file1.size !== state.file2.size) {
+                    const diff = Math.abs(state.file1.size - state.file2.size).toLocaleString('pt-BR');
+                    sub.textContent = `Os hashes não coincidem e os arquivos possuem tamanhos diferentes (diferença de ${diff} bytes).`;
+                } else {
+                    sub.textContent = `Os arquivos têm o mesmo tamanho, mas seus conteúdos e hashes ${algo} são diferentes.`;
+                }
+            }
+        }
+
+        async function loadSlot(slot, file) {
+            if (!file) return;
+            const algo = document.getElementById('algoSelect').value;
+            const isSlot1 = slot === 1;
+
+            if (isSlot1) { state.file1 = file; state.hash1 = null; }
+            else { state.file2 = file; state.hash2 = null; }
+
+            document.getElementById(`icon${slot}`).textContent = '📄';
+            document.getElementById(`fileName${slot}`).textContent = file.name;
+            document.getElementById(`fileSub${slot}`).textContent = file.type || 'Arquivo local';
+            const metaEl = document.getElementById(`fileMeta${slot}`);
+            const dateStr = new Date(file.lastModified).toLocaleString('pt-BR');
+            metaEl.textContent = `Tamanho: ${formatSize(file.size)} • Modificado: ${dateStr}`;
+            metaEl.style.display = 'inline-block';
+
+            const hashBox = document.getElementById(`hashBox${slot}`);
+            const copyBtn = document.getElementById(`btnCopy${slot}`);
+            hashBox.textContent = `Calculando hash ${algo}...`;
+            hashBox.style.color = '#94a3b8';
+            copyBtn.disabled = true;
+            copyBtn.textContent = 'Copiar Hash';
+
+            try {
+                const hash = await computeHash(file, algo);
+                if (isSlot1) state.hash1 = hash;
+                else state.hash2 = hash;
+                hashBox.textContent = hash;
+                hashBox.style.color = '#e2e8f0';
+                copyBtn.disabled = false;
+            } catch (err) {
+                hashBox.textContent = 'Erro ao calcular hash: ' + err.message;
+                hashBox.style.color = '#ef4444';
+            }
+
+            updateBanner();
+        }
+
+        function setupDropZone(slot) {
+            const dz = document.getElementById(`dropZone${slot}`);
+            const input = document.getElementById(`fileInput${slot}`);
+
+            dz.addEventListener('click', () => input.click());
+
+            dz.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dz.classList.add(`dragover-${slot}`);
+            });
+
+            dz.addEventListener('dragleave', () => {
+                dz.classList.remove(`dragover-${slot}`);
+            });
+
+            dz.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dz.classList.remove(`dragover-${slot}`);
+                const files = e.dataTransfer.files;
+                if (files.length >= 2) {
+                    loadSlot(1, files[0]);
+                    loadSlot(2, files[1]);
+                } else if (files.length === 1) {
+                    loadSlot(slot, files[0]);
+                }
+            });
+
+            input.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length >= 2) {
+                    loadSlot(1, files[0]);
+                    loadSlot(2, files[1]);
+                } else if (files.length === 1) {
+                    loadSlot(slot, files[0]);
+                }
+                input.value = '';
+            });
+
+            document.getElementById(`btnCopy${slot}`).addEventListener('click', () => {
+                const hash = slot === 1 ? state.hash1 : state.hash2;
+                if (hash) {
+                    navigator.clipboard.writeText(hash);
+                    document.getElementById(`btnCopy${slot}`).textContent = 'Copiado!';
+                }
+            });
+        }
+
+        setupDropZone(1);
+        setupDropZone(2);
+
+        document.getElementById('algoSelect').addEventListener('change', () => {
+            if (state.file1) loadSlot(1, state.file1);
+            if (state.file2) loadSlot(2, state.file2);
+        });
+
+        document.getElementById('btnRecalc').addEventListener('click', () => {
+            if (state.file1) loadSlot(1, state.file1);
+            if (state.file2) loadSlot(2, state.file2);
+        });
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            state.file1 = null; state.file2 = null;
+            state.hash1 = null; state.hash2 = null;
+            [1, 2].forEach(slot => {
+                document.getElementById(`icon${slot}`).textContent = '📥';
+                document.getElementById(`fileName${slot}`).textContent = `Arraste o ${slot}º arquivo aqui`;
+                document.getElementById(`fileSub${slot}`).textContent = 'ou clique para selecionar no computador';
+                document.getElementById(`fileMeta${slot}`).style.display = 'none';
+                const hb = document.getElementById(`hashBox${slot}`);
+                hb.textContent = 'Nenhum arquivo selecionado';
+                hb.style.color = '#64748b';
+                const cb = document.getElementById(`btnCopy${slot}`);
+                cb.disabled = true;
+                cb.textContent = 'Copiar Hash';
+            });
+            updateBanner();
+        });
+    </script>
+</body>
+</html>
